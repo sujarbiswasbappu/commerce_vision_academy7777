@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="bn"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Admin</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#eee;font-family:'Hind Siliguri',system-ui,sans-serif;padding:16px 16px 90px}
+h1{color:#e5b869;font-size:1.3rem}input,textarea{width:100%;padding:9px 11px;border-radius:8px;border:1px solid #333;background:#1a1a1a;color:#eee;font:inherit;margin:4px 0 10px}
+textarea{min-height:70px}label{font-size:.78rem;color:#aaa;display:block}
+details{border:1px solid #2a2a2a;border-radius:10px;margin:10px 0;background:#121212}summary{padding:12px 14px;cursor:pointer;color:#e5b869;font-weight:600}
+.in{padding:4px 14px 10px}.item{border:1px solid #2a2a2a;border-radius:8px;padding:10px;margin:8px 0;background:#161616}
+.bar{display:flex;gap:6px;margin-top:6px}button{background:#e5b869;color:#000;border:0;border-radius:6px;padding:8px 12px;font:inherit;font-weight:600;cursor:pointer}
+button.s{background:#2a2a2a;color:#eee}button.d{background:#5b1d22;color:#fff}.save{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #333;display:flex;gap:10px;align-items:center}
+.save button{flex:1}#st{font-size:.8rem;color:#aaa}img.pv{max-width:140px;max-height:140px;border-radius:8px;display:block;margin:4px 0;background:#fff}
+.chk{display:flex;gap:8px;align-items:center;margin:6px 0}.chk input{width:auto;margin:0}
+</style></head><body>
+<div id="login"><h1>🔒 Admin</h1><label>পাসওয়ার্ড</label><input type="password" id="pw"><button id="go">প্রবেশ</button><p id="err" style="color:#f66"></p></div>
+<div id="ed" style="display:none"><h1>⚙️ ওয়েবসাইট এডিটর</h1><p style="color:#aaa;font-size:.85rem">যা বদলাবেন, নিচের "সেভ ও লাইভ করুন" চাপলে সবার জন্য সাথে সাথে বদলে যাবে।</p><div id="root"></div>
+<div class="save"><button id="save">💾 সেভ ও লাইভ করুন</button><a href="/" target="_blank" style="color:#e5b869">দেখুন</a><span id="st"></span></div></div>
+<script>
+const $=id=>document.getElementById(id);let data,pw='';
+const IMG=new Set(['logo','qr','image','photo']),LONG=new Set(['text','address','details','notice','tagline']);
+const L={site:'সাইটের মূল তথ্য',numbers:'হোয়াটসঅ্যাপ/মোবাইল নম্বর',headings:'সেকশনের শিরোনাম',categories:'কার্যক্রম কার্ড',why:'কেন আমরা সেরা',routines:'ক্লাস রুটিন',pricing:'কোর্স ফি',teacherGroups:'শিক্ষক প্যানেল',facebook:'ফেসবুক পেজ/QR',branches:'শাখা',
+nameBn:'নাম (বাংলা)',nameEn:'নাম (ইংরেজি)',tagline:'ট্যাগলাইন',logo:'লোগো',notice:'উপরের চলমান নোটিশ',channelText:'চ্যানেল ব্যানার লেখা',channelBtn:'চ্যানেল বাটন',channelUrl:'চ্যানেল লিংক',footer:'ফুটার লেখা',number:'নম্বর',label:'লেখা',badge:'ব্যাজ',redBadge:'লাল ব্যাজ',title:'শিরোনাম',text:'বিবরণ',note:'নোট',image:'ছবি',ribbon:'রিবন (ছাড়)',original:'পুরাতন মূল্য',current:'বর্তমান মূল্য',suffix:'মূল্যের পাশের লেখা',offer:'অফার লেখা',details:'বিস্তারিত (প্রতি লাইনে একটি)',button:'বাটনের লেখা',featured:'হাইলাইট (সোনালি বর্ডার)',people:'শিক্ষকগণ',name:'নাম',qual:'পদবি/বিষয়',extra:'অতিরিক্ত তথ্য',photo:'ছবি',url:'লিংক',qr:'QR ছবি',hint:'নিচের ছোট লেখা',address:'ঠিকানা'};
+const lab=k=>L[k]||k;
+const blank=v=>Array.isArray(v)?[]:(v&&typeof v==='object')?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,blank(x)])):typeof v==='boolean'?false:'';
+function readImg(file,key,cb){
+ const fr=new FileReader();fr.onload=()=>{
+  if(key==='qr'){cb(fr.result);return;}
+  const im=new Image();im.onload=()=>{const m=key==='image'?1000:700,k=Math.min(1,m/im.width),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;
+   const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.82));};im.src=fr.result;};
+ fr.readAsDataURL(file);}
+function node(val,key,parent,depth){
+ const w=document.createElement('div');
+ if(Array.isArray(val)){
+  val.forEach((it,i)=>{const b=document.createElement('div');b.className='item';b.appendChild(node(it,'',val,depth+1));
+   const bar=document.createElement('div');bar.className='bar';
+   [['↑',()=>{if(i>0){[val[i-1],val[i]]=[val[i],val[i-1]];draw();}},'s'],['↓',()=>{if(i<val.length-1){[val[i+1],val[i]]=[val[i],val[i+1]];draw();}},'s'],['✕ মুছুন',()=>{if(confirm('মুছে ফেলবেন?')){val.splice(i,1);draw();}},'d']].forEach(([t,f,c])=>{const bt=document.createElement('button');bt.textContent=t;bt.className=c;bt.onclick=f;bar.appendChild(bt);});
+   b.appendChild(bar);w.appendChild(b);});
+  const add=document.createElement('button');add.textContent='➕ নতুন যোগ করুন';add.onclick=()=>{val.push(val.length?blank(val[0]):'');draw();};w.appendChild(add);
+ }else if(val&&typeof val==='object'){
+  for(const k in val){const v=val[k];
+   if(depth===0&&typeof v==='object'){const d=document.createElement('details');d.innerHTML=`<summary>${lab(k)}</summary>`;const i=document.createElement('div');i.className='in';i.appendChild(node(v,k,val,1));d.appendChild(i);if(window._open&&window._open[k])d.open=true;d.ontoggle=()=>{window._open=window._open||{};window._open[k]=d.open;};w.appendChild(d);}
+   else w.appendChild(node(v,k,val,depth+1));}
+ }else if(typeof val==='boolean'){
+  w.className='chk';const c=document.createElement('input');c.type='checkbox';c.checked=val;c.onchange=()=>parent[key]=c.checked;w.appendChild(c);w.append(lab(key));
+ }else if(IMG.has(key)){
+  w.innerHTML=`<label>${lab(key)}</label>`;if(val){const p=document.createElement('img');p.src=val;p.className='pv';w.appendChild(p);}
+  const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>f.files[0]&&readImg(f.files[0],key,r=>{parent[key]=r;draw();});w.appendChild(f);
+ }else{
+  w.innerHTML=`<label>${lab(key)}</label>`;const i=document.createElement(LONG.has(key)?'textarea':'input');i.value=val;i.oninput=()=>parent[key]=i.value;w.appendChild(i);
+ }
+ return w;}
+function draw(){const y=scrollY;$('root').innerHTML='';$('root').appendChild(node(data,'',null,0));scrollTo(0,y);}
+async function api(method,body){return fetch('/api/content',{method,headers:{'content-type':'application/json','x-admin-password':pw},body:body?JSON.stringify(body):undefined});}
+$('go').onclick=async()=>{pw=$('pw').value;const r=await api('POST',{__check:true});
+ if(!r.ok){$('err').textContent='ভুল পাসওয়ার্ড';return;}
+ let c=null;try{const g=await fetch('/api/content',{cache:'no-store'});if(g.ok)c=await g.json();}catch(e){}
+ data=c||await (await fetch('/default.json')).json();$('login').style.display='none';$('ed').style.display='block';draw();};
+$('pw').onkeydown=e=>{if(e.key==='Enter')$('go').click();};
+$('save').onclick=async()=>{$('st').textContent='সেভ হচ্ছে...';const r=await api('POST',data);$('st').textContent=r.ok?'✅ লাইভ হয়েছে':'❌ ব্যর্থ ('+r.status+')';};
+</script></body></html>
